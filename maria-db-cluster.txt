@@ -1,0 +1,75 @@
+Running MariaDB ColumnStore cluster with MaxScale:
+
+Set up the environment variables in the .env file
+$ cp .env_example .env
+
+$ docker compose up -d
+$ docker exec -it mcs1 provision mcs1 mcs2 mcs3
+
+$ docker exec -it mcs1 mariadb
+
+[MariaDB] > CREATE DATABASE %database_name%;
+[MariaDB] > CREATE USER 'util_user'@'127.0.0.1' IDENTIFIED BY 'util_user_passwd';
+[MariaDB] > GRANT SELECT, PROCESS ON *.* TO 'util_user'@'127.0.0.1';
+[MariaDB] > exit
+
+$ docker exec -it mcs1 bash
+# sudo mcsSetConfig CrossEngineSupport Host 127.0.0.1
+# sudo mcsSetConfig CrossEngineSupport Port 3306
+# sudo mcsSetConfig CrossEngineSupport User util_user
+# sudo mcsSetConfig CrossEngineSupport Password util_user_passwd
+# sudo nano /etc/my.cnf
+
+Add the following lines to the end of the file:
+[mariadb]
+columnstore_select_handler=AUTO
+
+# exit
+
+$ docker exec -it mcs2 bash
+# sudo nano /etc/my.cnf
+
+Add the following lines to the end of the file:
+[mariadb]
+columnstore_select_handler=AUTO
+
+# exit
+
+$ docker exec -it mcs3 bash
+# sudo nano /etc/my.cnf
+
+Add the following lines to the end of the file:
+[mariadb]
+columnstore_select_handler=AUTO
+
+# exit
+
+$ docker compose restart
+
+Start the cluster after every container restart
+$ docker exec mcs1 bash -c 'mcs cluster start'
+
+Connect to DB using MaxScale nodes on port 3310 and 3311
+
+MaxScale 1 GUI Access
+URL: http://127.0.0.1:8989
+username: admin
+password: mariadb
+
+MaxScale 2 GUI Access
+URL: http://127.0.0.1:8990
+username: admin
+password: mariadb
+
+Docker hub image
+https://hub.docker.com/r/mariadb/columnstore
+
+Additional information about Deploy ColumnStore Object Storage Topology with MariaDB Enterprise Server 23.08
+https://mariadb.com/docs/columnstore/deploy/topologies/columnstore-object-storage/enterprise-server-23-08/
+
+System Variables for MariaDB Enterprise Server 23.08
+https://mariadb.com/docs/server/ref/es23.08/system-variables/
+
+MaxCtrl is available in mx1 and mx2 containers
+https://mariadb.com/kb/en/mariadb-maxscale-24-maxctrl/
+$ docker exec -it mx1 maxctrl
